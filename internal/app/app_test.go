@@ -335,3 +335,37 @@ func TestMonitorCreateValidation(t *testing.T) {
 }
 
 func itoaTest(v int64) string { return strconv.FormatInt(v, 10) }
+
+// TestStaticAssets guards the /static prefix handling: the embedded file
+// system is rooted at static/, so the request path has to be stripped before
+// lookup, and the assets must be served with the right content type.
+func TestStaticAssets(t *testing.T) {
+	a, _ := newTestApp(t)
+	c := newClient(t, a.Handler())
+
+	for _, tc := range []struct {
+		path        string
+		contentType string
+	}{
+		{"/static/app.css", "text/css"},
+		{"/static/htmx.min.js", "javascript"},
+	} {
+		rec := c.do(http.MethodGet, tc.path, nil)
+		if rec.Code != http.StatusOK {
+			t.Fatalf("GET %s: expected 200, got %d", tc.path, rec.Code)
+		}
+		if body := rec.Body.Len(); body == 0 {
+			t.Fatalf("GET %s: empty body", tc.path)
+		}
+		if ct := rec.Header().Get("Content-Type"); !strings.Contains(ct, tc.contentType) {
+			t.Fatalf("GET %s: content type %q does not contain %q", tc.path, ct, tc.contentType)
+		}
+	}
+
+	if rec := c.do(http.MethodGet, "/static/", nil); rec.Code != http.StatusNotFound {
+		t.Fatalf("GET /static/: expected 404, got %d", rec.Code)
+	}
+	if rec := c.do(http.MethodGet, "/static/missing.css", nil); rec.Code != http.StatusNotFound {
+		t.Fatalf("GET /static/missing.css: expected 404, got %d", rec.Code)
+	}
+}

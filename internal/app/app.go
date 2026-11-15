@@ -54,7 +54,9 @@ func New(cfg config.Config, db *sql.DB, logger *slog.Logger) (*App, error) {
 		logger:  logger,
 		mailer:  mailer.NewWorker(st, sender, logger, 10*time.Second, 5),
 		checker: checker.New(st, cfg, logger),
-		static:  http.FileServer(http.FS(assets)),
+		// The file server is rooted at the embedded static/ subtree, so the
+		// /static prefix has to be removed before lookup.
+		static: http.StripPrefix("/static/", http.FileServer(http.FS(assets))),
 		now:     func() time.Time { return time.Now().UTC() },
 	}
 	return a, nil
@@ -159,6 +161,11 @@ func (a *App) routes() http.Handler {
 
 func (a *App) staticHandler() http.Handler {
 	cached := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Do not expose a directory listing of the embedded assets.
+		if r.URL.Path == "/static/" {
+			a.errorText(w, http.StatusNotFound, "Not found")
+			return
+		}
 		if strings.HasSuffix(r.URL.Path, "htmx.min.js") {
 			w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
 		} else {
