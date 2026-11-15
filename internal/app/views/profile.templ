@@ -1,0 +1,119 @@
+package views
+
+import "stillalive/internal/store"
+
+templ ProfilePage(p Page, u *store.User, created string) {
+	@Layout(p) {
+		@Breadcrumbs([]Crumb{{Label: "Home", URL: "/"}, {Label: "Profile"}})
+		<section class="card">
+			<div class="card-header">
+				<h1>Profile</h1>
+				<a class="btn btn-secondary" href="/profile/edit">Edit</a>
+			</div>
+			<dl class="details">
+				<dt>Name</dt>
+				<dd>{ u.Name }</dd>
+				<dt>Email</dt>
+				<dd>{ u.Email }</dd>
+				<dt>Email confirmed</dt>
+				<dd>{ yesNo(u.HasConfirmedEmail()) }</dd>
+				<dt>Timezone</dt>
+				<dd>{ u.Timezone }</dd>
+				<dt>Created</dt>
+				<dd>{ created }</dd>
+			</dl>
+		</section>
+		<section class="card">
+			<h2>Account</h2>
+			<div class="actions">
+				<a class="btn btn-secondary" href="/profile/password">Change password</a>
+				<a class="btn btn-danger" href="/profile/delete">Delete account</a>
+			</div>
+		</section>
+	}
+}
+
+templ ProfileEditPage(p Page, values ProfileValues, errors FormErrors, timezones []string) {
+	@Layout(p) {
+		@Breadcrumbs([]Crumb{{Label: "Home", URL: "/"}, {Label: "Profile", URL: "/profile"}, {Label: "Edit"}})
+		<section class="card narrow">
+			<h1>Edit profile</h1>
+			<form method="post" action="/profile/edit" class="form">
+				<input type="hidden" name="csrf_token" value={ p.CSRFToken }/>
+				<label class="field">
+					<span>Name</span>
+					<input type="text" name="name" value={ values.Name } maxlength="255" required/>
+					@FieldError(errors, "name")
+				</label>
+				<label class="field">
+					<span>Timezone</span>
+					<select name="timezone" required>
+						for _, tz := range timezones {
+							<option value={ tz } selected?={ tz == values.Timezone }>{ tz }</option>
+						}
+					</select>
+					@FieldError(errors, "timezone")
+				</label>
+				<div class="form-actions">
+					<button class="btn" type="submit">Save changes</button>
+					<a class="btn btn-secondary" href="/profile">Cancel</a>
+				</div>
+			</form>
+		</section>
+	}
+}
+
+templ ChangePasswordPage(p Page, errors FormErrors) {
+	@Layout(p) {
+		@Breadcrumbs([]Crumb{{Label: "Home", URL: "/"}, {Label: "Profile", URL: "/profile"}, {Label: "Change password"}})
+		<section class="card narrow">
+			<h1>Change password</h1>
+			<form method="post" action="/profile/password" class="form">
+				<input type="hidden" name="csrf_token" value={ p.CSRFToken }/>
+				<label class="field">
+					<span>Current password</span>
+					<input type="password" name="current_password" autocomplete="current-password" required/>
+					@FieldError(errors, "current_password")
+				</label>
+				<label class="field">
+					<span>New password</span>
+					<input type="password" name="new_password" autocomplete="new-password" required minlength="8"/>
+					@FieldError(errors, "new_password")
+				</label>
+				<label class="field">
+					<span>Confirm new password</span>
+					<input type="password" name="new_password_confirmation" autocomplete="new-password" required minlength="8"/>
+				</label>
+				<div class="form-actions">
+					<button class="btn" type="submit">Save password</button>
+					<a class="btn btn-secondary" href="/profile">Cancel</a>
+				</div>
+			</form>
+		</section>
+	}
+}
+
+templ DeleteAccountPage(p Page, u *store.User, errors FormErrors) {
+	@Layout(p) {
+		@Breadcrumbs([]Crumb{{Label: "Home", URL: "/"}, {Label: "Profile", URL: "/profile"}, {Label: "Delete account"}})
+		<section class="card narrow">
+			<h1>Delete account</h1>
+			<p>
+				Deleting your account permanently removes all data, including monitors and ping
+				history. There is no way to recover it.
+			</p>
+			<form method="post" action="/profile/delete" class="form">
+				<input type="hidden" name="csrf_token" value={ p.CSRFToken }/>
+				<label class="field">
+					<span>Enter your name ({ u.Name }) to confirm</span>
+					<input type="text" name="nameConfirm" autocomplete="off" required/>
+					@FieldError(errors, "nameConfirm")
+				</label>
+				<div class="form-actions">
+					<button class="btn btn-danger" type="submit">Delete account permanently</button>
+					<a class="btn btn-secondary" href="/profile">Cancel</a>
+				</div>
+			</form>
+		</section>
+	}
+}

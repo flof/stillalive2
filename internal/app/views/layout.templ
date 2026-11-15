@@ -1,0 +1,111 @@
+package views
+
+templ Layout(p Page) {
+	<!DOCTYPE html>
+	<html lang="en">
+		<head>
+			<meta charset="utf-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1"/>
+			<title>{ p.AppName }</title>
+			<link rel="stylesheet" href="/static/app.css"/>
+			<script src="/static/htmx.min.js" defer></script>
+		</head>
+		<body>
+			<header class="topbar">
+				<div class="topbar-inner">
+					<a class="brand" href="/">{ p.AppName }</a>
+					<nav class="nav">
+						if p.User != nil {
+							<a class="nav-link" href="/monitors">Monitors</a>
+							<a class="nav-link" href="/profile">{ p.User.Name }</a>
+							<form method="post" action="/logout" class="inline-form">
+								<input type="hidden" name="csrf_token" value={ p.CSRFToken }/>
+								<button class="nav-link button-link" type="submit">Log out</button>
+							</form>
+						} else {
+							<a class="nav-link" href="/login">Log in</a>
+							<a class="btn btn-small" href="/register">Register</a>
+						}
+					</nav>
+				</div>
+			</header>
+
+			<main class="container">
+				@Flash(p)
+				if p.User != nil && !p.User.HasConfirmedEmail() {
+					@ConfirmBanner(p, "")
+				}
+				{ children... }
+			</main>
+
+			<footer class="footer">
+				<div class="footer-inner">
+					<span>&copy; { p.AppName }</span>
+					<nav class="footer-nav">
+						<a href="/imprint">Imprint</a>
+						<a href="/terms">Terms</a>
+						<a href="/contact">Contact</a>
+					</nav>
+				</div>
+			</footer>
+		</body>
+	</html>
+}
+
+templ Flash(p Page) {
+	if p.FlashSuccess != "" {
+		<div class="alert alert-success" role="status">{ p.FlashSuccess }</div>
+	}
+	if p.FlashError != "" {
+		<div class="alert alert-error" role="alert">{ p.FlashError }</div>
+	}
+}
+
+templ ConfirmBanner(p Page, message string) {
+	<div id="confirm-banner" class="alert alert-warn">
+		if message != "" {
+			<p>{ message }</p>
+		} else {
+			<p>
+				You have not confirmed your email address yet. We cannot send alert emails for your
+				monitors until you do. Check your inbox for the confirmation email.
+			</p>
+			<form method="post" action="/profile/confirm/resend" class="inline-form"
+				hx-post="/profile/confirm/resend" hx-target="#confirm-banner" hx-swap="outerHTML">
+				<input type="hidden" name="csrf_token" value={ p.CSRFToken }/>
+				<button class="btn btn-small" type="submit">Send confirmation email again</button>
+			</form>
+		}
+	</div>
+}
+
+templ StatusBadge(label, class string) {
+	<span class={ "badge badge-" + class }>{ label }</span>
+}
+
+templ FieldError(errors FormErrors, name string) {
+	if errors.Get(name) != "" {
+		<p class="field-error">{ errors.Get(name) }</p>
+	}
+}
+
+templ Breadcrumbs(items []Crumb) {
+	<nav class="breadcrumbs" aria-label="Breadcrumb">
+		for i, c := range items {
+			if i > 0 {
+				<span class="crumb-sep">/</span>
+			}
+			if c.URL != "" {
+				<a href={ c.URL }>{ c.Label }</a>
+			} else {
+				<span>{ c.Label }</span>
+			}
+		}
+	</nav>
+}
+
+// Crumb is one breadcrumb entry; an empty URL renders as plain text.
+type Crumb struct {
+	Label string
+	URL   string
+}

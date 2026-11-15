@@ -1,0 +1,11 @@
+.env
+bin/
+data/
+stillalive
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+/tmp/
+coverage.out

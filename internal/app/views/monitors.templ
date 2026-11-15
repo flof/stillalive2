@@ -1,0 +1,211 @@
+package views
+
+templ MonitorListPage(p Page, monitors []MonitorCard) {
+	@Layout(p) {
+		@Breadcrumbs([]Crumb{{Label: "Home", URL: "/"}, {Label: "Monitors"}})
+		<section class="card">
+			<div class="card-header">
+				<h1>Monitors</h1>
+				<a class="btn" href="/monitors/new">Add monitor</a>
+			</div>
+			<p class="muted">
+				This list refreshes automatically. A monitor only starts alerting after its first ping.
+			</p>
+			<table class="table">
+				<thead>
+					<tr>
+						<th>Name</th>
+						<th>Status</th>
+						<th>Last ping</th>
+						<th class="actions-col">Actions</th>
+					</tr>
+				</thead>
+				@MonitorRows(p, monitors)
+			</table>
+		</section>
+	}
+}
+
+templ MonitorRows(p Page, monitors []MonitorCard) {
+	<tbody id="monitor-rows" hx-get="/monitors/rows" hx-trigger="every 30s" hx-target="#monitor-rows" hx-swap="outerHTML">
+		if len(monitors) == 0 {
+			<tr>
+				<td colspan="4" class="empty">No monitors yet. Add one to start watching a job.</td>
+			</tr>
+		} else {
+			for _, m := range monitors {
+				@MonitorRow(p, m)
+			}
+		}
+	</tbody>
+}
+
+templ MonitorRow(p Page, m MonitorCard) {
+	<tr id={ "monitor-row-" + itoa(m.ID) }>
+		<td>
+			<a class="strong" href={ m.ShowURL }>{ m.Name }</a>
+			<div class="muted small">every { m.Interval }</div>
+		</td>
+		<td>@StatusBadge(m.StatusLabel, m.StatusClass)</td>
+		<td title={ m.LastPingAbsolute }>{ m.LastPing }</td>
+		<td class="actions-cell">
+			<form method="post" action={ m.ToggleURL } class="inline-form"
+				hx-post={ m.ToggleURL } hx-target="closest tr" hx-swap="outerHTML">
+				<input type="hidden" name="csrf_token" value={ p.CSRFToken }/>
+				if m.Enabled {
+					<button class="btn btn-small btn-secondary" type="submit">Disable</button>
+				} else {
+					<button class="btn btn-small btn-secondary" type="submit">Enable</button>
+				}
+			</form>
+			<a class="btn btn-small btn-secondary" href={ m.EditURL }>Edit</a>
+		</td>
+	</tr>
+}
+
+templ MonitorNewPage(p Page, values MonitorValues, errors FormErrors) {
+	@Layout(p) {
+		@Breadcrumbs([]Crumb{{Label: "Home", URL: "/"}, {Label: "Monitors", URL: "/monitors"}, {Label: "New monitor"}})
+		<section class="card narrow">
+			<h1>New monitor</h1>
+			@MonitorForm(p, "/monitors", values, errors, "Create monitor", "/monitors")
+		</section>
+	}
+}
+
+templ MonitorEditPage(p Page, m MonitorCard, values MonitorValues, errors FormErrors) {
+	@Layout(p) {
+		@Breadcrumbs([]Crumb{
+			{Label: "Home", URL: "/"},
+			{Label: "Monitors", URL: "/monitors"},
+			{Label: m.Name, URL: m.ShowURL},
+			{Label: "Edit"},
+		})
+		<section class="card narrow">
+			<h1>Edit monitor</h1>
+			@MonitorForm(p, m.EditURL, values, errors, "Save changes", m.ShowURL)
+		</section>
+	}
+}
+
+templ MonitorForm(p Page, action string, values MonitorValues, errors FormErrors, submitLabel, cancelURL string) {
+	<form method="post" action={ action } class="form">
+		<input type="hidden" name="csrf_token" value={ p.CSRFToken }/>
+		<label class="field">
+			<span>Name</span>
+			<input type="text" name="name" value={ values.Name } maxlength="255" required autofocus/>
+			@FieldError(errors, "name")
+		</label>
+		<fieldset class="field">
+			<legend>Maximum ping interval</legend>
+			<p class="muted small">If no ping arrives within this interval, the monitor is considered overdue.</p>
+			<div class="inline-fields">
+				<label class="field field-inline">
+					<input type="number" name="max_ping_interval_hours" value={ values.Hours } min="0" max="200" inputmode="numeric"/>
+					<span>hours</span>
+				</label>
+				<label class="field field-inline">
+					<input type="number" name="max_ping_interval_minutes" value={ values.Minutes } min="0" max="2000" inputmode="numeric"/>
+					<span>minutes</span>
+				</label>
+			</div>
+			@FieldError(errors, "max_ping_interval")
+		</fieldset>
+		<label class="checkbox">
+			<input type="hidden" name="enabled" value="0"/>
+			<input type="checkbox" name="enabled" value="1" checked?={ values.Enabled }/>
+			<span>Enabled</span>
+		</label>
+		@FieldError(errors, "enabled")
+		<div class="form-actions">
+			<button class="btn" type="submit">{ submitLabel }</button>
+			<a class="btn btn-secondary" href={ cancelURL }>Cancel</a>
+		</div>
+	</form>
+}
+
+templ MonitorShowPage(p Page, m MonitorCard) {
+	@Layout(p) {
+		@Breadcrumbs([]Crumb{
+			{Label: "Home", URL: "/"},
+			{Label: "Monitors", URL: "/monitors"},
+			{Label: m.Name},
+		})
+		<section class="card">
+			<div class="card-header">
+				<div class="title-row">
+					<h1>{ m.Name }</h1>
+					@StatusBadge(m.StatusLabel, m.StatusClass)
+				</div>
+				<div class="actions">
+					<a class="btn btn-secondary" href={ m.EditURL }>Edit</a>
+					<a class="btn btn-danger" href={ m.DeleteURL } hx-get={ m.DeleteURL } hx-target="#delete-slot" hx-swap="innerHTML">Delete</a>
+				</div>
+			</div>
+
+			<div id="delete-slot"></div>
+
+			<dl class="details">
+				<dt>Enabled</dt>
+				<dd>{ yesNo(m.Enabled) }</dd>
+				<dt>Max. ping interval</dt>
+				<dd>{ m.Interval }</dd>
+				<dt>Created</dt>
+				<dd>{ m.Created }</dd>
+				<dt>Ping URL</dt>
+				<dd><a class="mono" href={ m.PingURL }>{ m.PingURL }</a></dd>
+				<dt>Last ping</dt>
+				<dd>{ m.LastPing } <span class="muted">({ m.LastPingAbsolute })</span></dd>
+				<dt>Pings recorded</dt>
+				<dd>{ itoa64(m.PingCount) }</dd>
+			</dl>
+		</section>
+
+		<section class="card">
+			<h2>How to ping</h2>
+			<p>
+				Send an HTTP POST request to the ping URL after each successful run. Still Alive
+				responds with status code <code>201</code>. A GET request opens a small form you can
+				use for testing.
+			</p>
+			<pre><code>{ "curl -s -X POST " + m.PingURL + " > /dev/null" }</code></pre>
+			if m.AwaitingFirstPing {
+				<p class="hint">
+					This monitor has not received a ping yet, so it is not being evaluated. Send the
+					first ping once the job is set up.
+				</p>
+			}
+		</section>
+	}
+}
+
+templ MonitorDeleteBox(p Page, m MonitorCard) {
+	<div class="alert alert-error">
+		<p>
+			Delete monitor <strong>{ m.Name }</strong>? Its ping history will be permanently
+			removed. There is no undo.
+		</p>
+		<div class="actions">
+			<form method="post" action={ m.DeleteURL } class="inline-form">
+				<input type="hidden" name="csrf_token" value={ p.CSRFToken }/>
+				<button class="btn btn-danger" type="submit">Delete permanently</button>
+			</form>
+			<a class="btn btn-secondary" href={ m.ShowURL }>Cancel</a>
+		</div>
+	</div>
+}
+
+templ MonitorDeletePage(p Page, m MonitorCard) {
+	@Layout(p) {
+		@Breadcrumbs([]Crumb{
+			{Label: "Home", URL: "/"},
+			{Label: "Monitors", URL: "/monitors"},
+			{Label: m.Name, URL: m.ShowURL},
+			{Label: "Delete"},
+		})
+		<section class="card narrow">
+			<h1>Delete monitor</h1>
+			@MonitorDeleteBox(p, m)
+		</section>
+	}
+}

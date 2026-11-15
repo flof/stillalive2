@@ -1,0 +1,36 @@
+package views
+
+templ PingPage(p Page, token, monitorName string, enabled bool) {
+	@Layout(p) {
+		<section class="card narrow">
+			<h1>Ping monitor <strong>{ monitorName }</strong></h1>
+			if !enabled {
+				<div class="alert alert-warn">
+					This monitor is currently disabled. Pings are not recorded.
+				</div>
+			} else {
+				<div class="alert alert-warn">
+					This form is shown because you opened the ping URL with a GET request. Normally
+					the monitored job sends a POST request to this URL. You can use this form for
+					testing.
+				</div>
+				<form method="post" action={ "/ping/" + token } class="form">
+					<input type="hidden" name="from_form" value="1"/>
+					<button class="btn" type="submit">Ping now</button>
+				</form>
+			}
+		</section>
+	}
+}
+
+templ ErrorPage(p Page, status int, message string) {
+	@Layout(p) {
+		<section class="card narrow">
+			<h1>{ itoa(int64(status)) }</h1>
+			<p>{ message }</p>
+			<div class="actions">
+				<a class="btn btn-secondary" href="/">Back to home</a>
+			</div>
+		</section>
+	}
+}
