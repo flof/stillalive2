@@ -81,6 +81,7 @@ local development.
 
 ```bash
 make generate   # templ generate ./...
+make watch      # regenerate + restart on change, live reload on :7331
 make test       # go test ./...
 make vet        # go vet ./...
 make build      # static binary in ./bin/stillalive
@@ -89,6 +90,28 @@ make build      # static binary in ./bin/stillalive
 Requirements: Go 1.27 or newer. The `templ` CLI is invoked via `go run`, so an
 extra global install is not needed. Generated `*_templ.go` files are committed,
 which means `go build` works without running the generator.
+
+### Live reload
+
+```bash
+make watch
+```
+
+`make watch` regenerates templ code and restarts the server whenever a `.templ`
+or `.go` file changes, then reloads the open page. Browse through the proxy at
+**<http://localhost:7331>**, not port 8080 directly — the proxy forwards to the
+application and is what injects the reload script.
+
+- It loads `.env` the same way `make run` does, so both commands use the same
+  database and mail settings.
+- The proxy target is hard-coded to `http://localhost:8080` in the `Makefile`.
+  If you change `ADDR`, update the `--proxy` value to match, otherwise the app
+  starts but the proxy points at nothing.
+- A browser tab is opened automatically on start (`--open-browser=false` in the
+  target disables that).
+- Only content edits trigger a restart; `touch` alone does not.
+- `Ctrl-C` stops the server and the generator. The command runs in its own
+  process group, so no orphan keeps port 8080 open between restarts.
 
 Layout:
 
