@@ -1,6 +1,7 @@
 .env
 bin/
 data/
+# Root-only: a bare `stillalive` also matches cmd/stillalive/.
 /stillalive
 *.db
 *.db-shm
