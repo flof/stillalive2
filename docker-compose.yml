@@ -2,6 +2,7 @@ services:
   stillalive:
     build: .
     image: stillalive:local
+    container_name: stillalive
     restart: unless-stopped
     networks:
       - default
