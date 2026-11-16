@@ -3,8 +3,9 @@ services:
     build: .
     image: stillalive:local
     restart: unless-stopped
-    ports:
-      - "8080:8080"
+    networks:
+      - default
+      - caddy
     env_file:
       - .env
     environment:
@@ -16,3 +17,6 @@ services:
 
 volumes:
   stillalive-data:
+networks:
+  caddy:
+    external: true
