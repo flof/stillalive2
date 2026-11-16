@@ -3,6 +3,7 @@ services:
     build: .
     image: stillalive:local
     container_name: stillalive
+    user: "${UID}:${GID}"
     restart: unless-stopped
     networks:
       - default
@@ -14,10 +15,8 @@ services:
       DATABASE_PATH: /data/stillalive.db
       SESSION_SECURE: "true"
     volumes:
-      - stillalive-data:/data
+      - ./data:/data
 
-volumes:
-  stillalive-data:
 networks:
   caddy:
     external: true
