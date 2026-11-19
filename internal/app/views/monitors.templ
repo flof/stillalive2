@@ -49,16 +49,18 @@ templ MonitorRow(p Page, m MonitorCard) {
 		<td>@StatusBadge(m.StatusLabel, m.StatusClass)</td>
 		<td title={ m.LastPingAbsolute }>{ m.LastPing }</td>
 		<td class="actions-cell">
-			<form method="post" action={ m.ToggleURL } class="inline-form"
-				hx-post={ m.ToggleURL } hx-target="closest tr" hx-swap="outerHTML">
-				<input type="hidden" name="csrf_token" value={ p.CSRFToken }/>
-				if m.Enabled {
-					<button class="btn btn-small btn-secondary" type="submit">Disable</button>
-				} else {
-					<button class="btn btn-small btn-secondary" type="submit">Enable</button>
-				}
-			</form>
-			<a class="btn btn-small btn-secondary" href={ m.EditURL }>Edit</a>
+			<div class="actions-inner">
+				<form method="post" action={ m.ToggleURL } class="inline-form"
+					hx-post={ m.ToggleURL } hx-target="closest tr" hx-swap="outerHTML">
+					<input type="hidden" name="csrf_token" value={ p.CSRFToken }/>
+					if m.Enabled {
+						<button class="btn btn-small btn-secondary" type="submit">Disable</button>
+					} else {
+						<button class="btn btn-small btn-secondary" type="submit">Enable</button>
+					}
+				</form>
+				<a class="btn btn-small btn-secondary" href={ m.EditURL }>Edit</a>
+			</div>
 		</td>
 	</tr>
 }

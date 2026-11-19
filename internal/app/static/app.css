@@ -390,6 +390,10 @@ pre code {
 }
 
 .actions-cell {
+	text-align: right;
+}
+
+.actions-inner {
 	display: flex;
 	gap: 8px;
 	justify-content: flex-end;
@@ -652,7 +656,7 @@ select:focus {
 		display: none;
 	}
 
-	.actions-cell {
+	.actions-inner {
 		flex-direction: column;
 		align-items: stretch;
 	}
